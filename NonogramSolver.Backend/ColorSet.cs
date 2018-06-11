@@ -82,7 +82,7 @@ namespace NonogramSolver.Backend
 
             uint val = value;
             uint color = 0;
-            while (val != 1)
+            while (val > 1)
             {
                 color++;
                 val = val >> 1;

@@ -7,7 +7,7 @@ using System.Text;
 
 namespace NonogramSolver.Backend
 {
-    internal class ConstraintList : IList<Constraint>
+    internal class ConstraintList : IList<Constraint> // TODO: the IList implement is probably unnecessary
     {
         private List<Constraint> constraints;
         private readonly int boardSize;
@@ -31,47 +31,28 @@ namespace NonogramSolver.Backend
             IsDirty = true;
         }
 
-        public IReadOnlyList<ColorSet> CalculateColorSets(BoardState board)
+        public BoardState.IntersectResult ConstrainBoard(IBoardView boardView)
         {
-            ColorSet[] boardColors = GetCurrentBoardColors(board);
-            Debug.Assert(boardColors.Length == boardSize);
             ConstraintSegment.CreateChain(constraints, out ConstraintSegment segmentBegin, out ConstraintSegment segmentEnd);
 
             // Start final colors as completely empty: no colors possible at all
-            ColorSet[] finalColors = new ColorSet[boardSize];
+            ColorSet[] finalColors = new ColorSet[boardView.Count];
 
             do
             {
                 IReadOnlyList<ColorSet> segmentColors = GetColorsFromSegments(segmentBegin);
-                if (AreCompatible(boardColors, segmentColors))
+                if (AreCompatible(boardView, segmentColors))
                 {
                     Merge(segmentColors, finalColors);
                 }
-            } while (segmentEnd.Bump(boardSize));
+            } while (segmentEnd.Bump(boardView.Count));
 
+            var result = boardView.IntersectAll(finalColors);
+
+            // This has to be after the above IntersectAll, which will try to mark this constraint as Dirty
             IsDirty = false;
-            return finalColors;
-        }
 
-        private ColorSet[] GetCurrentBoardColors(BoardState boardState)
-        {
-            Func<int, Tile> getter;
-            if (IsRow)
-            {
-                getter = (i => boardState[Index, i]);
-            }
-            else
-            {
-                getter = (i => boardState[i, Index]);
-            }
-
-            ColorSet[] boardColors = new ColorSet[boardSize];
-            for (int i = 0; i < boardSize; i++)
-            {
-                boardColors[i] = getter(i).Colors;
-            }
-
-            return boardColors;
+            return result;
         }
 
         private IReadOnlyList<ColorSet> GetColorsFromSegments(ConstraintSegment begin)
@@ -119,6 +100,19 @@ namespace NonogramSolver.Backend
             return contained.All(b => b);
         }
 
+        private bool AreCompatible(IBoardView boardColors, IReadOnlyList<ColorSet> segmentColors)
+        {
+            Debug.Assert(boardColors.Count == segmentColors.Count);
+            for (int i = 0; i < segmentColors.Count; i++)
+            {
+                ColorSet result = boardColors[i].Intersect(segmentColors[i]);
+                if (result.IsEmpty)
+                    return false;
+            }
+
+            return true;
+        }
+
         private void Merge(IReadOnlyList<ColorSet> from, ColorSet[] into)
         {
             Debug.Assert(from.Count == into.Length);
@@ -126,105 +120,6 @@ namespace NonogramSolver.Backend
             for (int i = 0; i < from.Count; i++)
             {
                 into[i] = into[i].Union(from[i]);
-            }
-        }
-
-        private class ConstraintCombination
-        {
-            private List<int> startIndices;
-            private ConstraintList parent;
-
-            public ConstraintCombination(ConstraintList parent)
-            {
-                this.parent = parent;
-                BuildInitial();
-            }
-
-            private void BuildInitial()
-            {
-                startIndices = Enumerable.Repeat(0, parent.Count).ToList();
-                BuildWorker(0, 0);
-            }
-
-            private void BuildWorker(int currentPoint, int index)
-            {
-                if (index >= parent.Count)
-                    return;
-
-                if (index > 0)
-                {
-                    if (parent[index-1].color == parent[index].color)
-                    {
-                        currentPoint++;
-                    }
-                }
-
-                startIndices[index] = currentPoint;
-
-                currentPoint += (int)(parent[index].number);
-
-                Debug.Assert(currentPoint <= parent.boardSize);
-                BuildWorker(currentPoint, index + 1);
-            }
-
-            private bool Bump()
-            {
-                int endPoint = parent.boardSize;
-                uint prevColor = ColorSpace.Empty;
-                for (int i = startIndices.Count - 1; i >= 0; i++)
-                {
-                    int endAt = startIndices[i] + (int)parent[i].number;
-
-                    uint currentColor = parent[i].color;
-                    if (currentColor == prevColor)
-                    {
-                        // Need to add a gap
-                        endAt--;
-                    }
-
-                    prevColor = currentColor;
-
-                    if (endAt < endPoint)
-                    {
-                        // TODO: this doesn't compile
-                        //BuildFrom(startIndices[i] + 1, i);
-                        return true;
-                    }
-                }
-
-                return false;
-            }
-
-            private bool BumpWorker(int currentPoint, int index)
-            {
-                if (index < 0)
-                    return false;
-
-                // currentPoint represents the beginning of a segment
-                int endOfCurrent = currentPoint + (int)(parent[index].number);
-                int startOfNext;
-                if (index < parent.Count - 1)
-                {
-                    startOfNext = startIndices[index + 1];
-
-                    if (parent[index].color == parent[index+1].color)
-                    {
-                        startOfNext--;
-                    }
-                }
-                else
-                {
-                    startOfNext = parent.Count - 1;
-                }
-
-                int startOfCurrent = startIndices[index];
-                if (endOfCurrent < startOfNext)
-                {
-                    BuildWorker(startOfCurrent + 1, index);
-                    return true;
-                }
-
-                return BumpWorker(startOfCurrent, index - 1);
             }
         }
 

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
@@ -7,75 +8,165 @@ using System.Threading.Tasks;
 
 namespace NonogramSolver.Backend
 {
+    interface IBoardView
+    {
+        ColorSet this[int index] { get; }
+        int Count { get; }
+        BoardState.IntersectResult IntersectAll(IReadOnlyList<ColorSet> colorSets);
+    }
+
     class BoardState
     {
-        private Tile[,] tiles;
+        ColorSet[,] colors;
+        Board owningBoard;
 
-        public BoardState(Board owningBoard)
+        public enum IntersectResult
         {
-            CreateTiles(owningBoard);
+            Changed,
+            NoChange,
+            NoSolution
         }
 
-        public Tile this[int x, int y] => tiles[x, y];
-
-        public bool IntersectColorSetsOnRow(int row, IReadOnlyList<ColorSet> colors)
+        public BoardState(Board board)
         {
-            int numCols = tiles.GetLength(1);
-            Debug.Assert(colors.Count == numCols);
-
-            bool changed = false;
-            for (int i = 0; i < numCols; i++)
-            {
-                bool c = tiles[row, i].IntersectWith(colors[i]);
-                changed = changed || c;
-            }
-            return changed;
+            owningBoard = board;
+            CreateTiles();
         }
 
-        public bool IntersectColorSetsOnColumn(int col, IReadOnlyList<ColorSet> colors)
+        private BoardState(BoardState other)
         {
-            int numRows = tiles.GetLength(0);
-            Debug.Assert(colors.Count == numRows);
-
-            bool changed = false;
-            for (int i = 0; i < numRows; i++)
-            {
-                bool c = tiles[i, col].IntersectWith(colors[i]);
-                changed = changed || c;
-            }
-            return changed;
+            // A copy constructor, essentially
+            colors = (ColorSet[,])other.colors.Clone();
+            owningBoard = other.owningBoard;
         }
 
         public ISolvedBoard ExtractSolvedBoard()
         {
-            int numRows = tiles.GetLength(0);
-            int numCols = tiles.GetLength(1);
+            int numRows = owningBoard.NumRows;
+            int numCols = owningBoard.NumColumns;
             SolvedBoard solvedBoard = new SolvedBoard(numRows, numCols);
 
             for (int i = 0; i < numRows; i++)
             {
                 for (int j = 0; j < numCols; j++)
                 {
-                    Tile tile = tiles[i, j];
-                    Debug.Assert(tile.IsDecided);
-                    solvedBoard[i, j] = tile.DecidedColor;
+                    ColorSet tile = colors[i, j];
+                    Debug.Assert(tile.IsSingle());
+                    solvedBoard[i, j] = tile.GetSingleColor();
                 }
             }
 
             return solvedBoard;
         }
 
-        private void CreateTiles(Board board)
+        public IBoardView CreateRowView(int index)
         {
-            int numRows = board.NumRows;
-            int numCols = board.NumColumns;
-            tiles = new Tile[numRows, numCols];
+            Debug.Assert(index >= 0 && index < owningBoard.NumRows);
+            return new RowView(index, this);
+        }
+
+        public IBoardView CreateColView(int index)
+        {
+            Debug.Assert(index >= 0 && index < owningBoard.NumColumns);
+            return new ColView(index, this);
+        }
+
+        public BoardState Clone()
+        {
+            return new BoardState(this);
+        }
+
+        private void CreateTiles()
+        {
+            int numRows = owningBoard.NumRows;
+            int numCols = owningBoard.NumColumns;
+
+            colors = new ColorSet[numRows, numCols];
+
+            var fullColor = ColorSet.CreateFullColorSet(owningBoard.ColorSpace.MaxColor);
             for (int i = 0; i < numRows; i++)
             {
                 for (int j = 0; j < numCols; j++)
                 {
-                    tiles[i, j] = new Tile(i, j, board);
+                    colors[i, j] = fullColor;
                 }
+            }
+        }
+
+        private class RowView : IBoardView
+        {
+            private readonly int rowIndex;
+            private readonly BoardState owner;
+
+            public RowView(int rowIndex, BoardState owner)
+            {
+                this.rowIndex = rowIndex;
+                this.owner = owner;
+            }
+
+            public ColorSet this[int index] => owner.colors[rowIndex, index];
+
+            public int Count => owner.owningBoard.NumColumns;
+
+            public IntersectResult IntersectAll(IReadOnlyList<ColorSet> colorSets)
+            {
+                bool changed = false;
+                for (int i = 0; i < Count; i++)
+                {
+                    var color = owner.colors[rowIndex, i];
+                    ColorSet newColor = color.Intersect(colorSets[i]);
+
+                    if (newColor.IsEmpty)
+                        return IntersectResult.NoSolution;
+
+                    if (newColor == color)
+                        continue;
+
+                    owner.colors[rowIndex, i] = newColor;
+                    changed = true;
+                    owner.owningBoard.OnTileDirty(rowIndex, i);
+                }
+
+                return changed ? IntersectResult.Changed : IntersectResult.NoChange;
+            }
+        }
+
+        private class ColView : IBoardView
+        {
+            private readonly int colIndex;
+            private readonly BoardState owner;
+
+            public ColView(int colIndex, BoardState owner)
+            {
+                this.colIndex = colIndex;
+                this.owner = owner;
+            }
+
+            public ColorSet this[int index] => owner.colors[index, colIndex];
+
+            public int Count => owner.owningBoard.NumRows;
+
+            public IntersectResult IntersectAll(IReadOnlyList<ColorSet> colorSets)
+            {
+                bool changed = false;
+
+                for (int i = 0; i < Count; i++)
+                {
+                    var color = owner.colors[i, colIndex];
+                    ColorSet newColor = color.Intersect(colorSets[i]);
+
+                    if (newColor.IsEmpty)
+                        return IntersectResult.NoSolution;
+
+                    if (newColor == color)
+                        continue;
+
+                    owner.colors[i, colIndex] = newColor;
+                    changed = true;
+                    owner.owningBoard.OnTileDirty(i, colIndex);
+                }
+
+                return changed ? IntersectResult.Changed : IntersectResult.NoChange;
             }
         }
     }

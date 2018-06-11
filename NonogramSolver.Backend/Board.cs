@@ -6,9 +6,17 @@ using System.Text;
 
 namespace NonogramSolver.Backend
 {
+
+    public class UnsolvableBoardException : Exception
+    {
+        public UnsolvableBoardException() { }
+        public UnsolvableBoardException(string message) : base(message) { }
+        public UnsolvableBoardException(string message, Exception inner) : base(message, inner) { }
+    }
+
     internal class Board : IBoard
     {
-        private BoardState boardState;
+        private BoardManager boardManager;
         private List<ConstraintList> rowConstraintList;
         private List<ConstraintList> colConstraintList;
 
@@ -21,7 +29,7 @@ namespace NonogramSolver.Backend
             NumColumns = ColumnConstraints.Count;
             ColorSpace = colors;
 
-            boardState = new BoardState(this);
+            boardManager = new BoardManager(this);
 
             CreateConstraints();
         }
@@ -38,15 +46,15 @@ namespace NonogramSolver.Backend
 
         public ISolvedBoard Solve()
         {
-            if (boardState == null)
+            if (boardManager == null)
             {
-                boardState = new BoardState(this);
+                boardManager = new BoardManager(this);
             }
 
             SolverLoop();
 
-            ISolvedBoard solved = boardState.ExtractSolvedBoard();
-            boardState = null;
+            ISolvedBoard solved = boardManager.CurrentLayer.ExtractSolvedBoard();
+            boardManager = null;
             return solved;
         }
 
@@ -88,35 +96,50 @@ namespace NonogramSolver.Backend
             bool changed = false;
             do
             {
-                bool rchange = InnerConstraintLoop(rowConstraintList);
-                bool cchange = InnerConstraintLoop(colConstraintList);
+                bool rchange = OuterConstraintLoop(rowConstraintList);
+                bool cchange = OuterConstraintLoop(colConstraintList);
                 changed = rchange || cchange;
             } while (changed);
         }
 
-        private bool InnerConstraintLoop(IEnumerable<ConstraintList> constraints)
+        private bool OuterConstraintLoop(IEnumerable<ConstraintList> constraints)
+        {
+            var result = InnerConstraintLoop(constraints);
+            switch (result)
+            {
+                case BoardState.IntersectResult.NoSolution:
+                    throw new UnsolvableBoardException(); // TODO: do push / pop logic here...
+                case BoardState.IntersectResult.Changed:
+                    return true;
+                case BoardState.IntersectResult.NoChange:
+                    return false;
+                default:
+                    throw new InvalidOperationException("Unreachable code");
+            }
+        }
+
+        private BoardState.IntersectResult InnerConstraintLoop(IEnumerable<ConstraintList> constraints)
         {
             bool changed = false;
             foreach (ConstraintList constr in constraints)
             {
                 if (constr.IsDirty)
                 {
-                    var colors = constr.CalculateColorSets(boardState);
-                    bool change;
-                    if (constr.IsRow)
-                    {
-                        change = boardState.IntersectColorSetsOnRow(constr.Index, colors);
-                    }
-                    else
-                    {
-                        change = boardState.IntersectColorSetsOnColumn(constr.Index, colors);
-                    }
+                    BoardState state = boardManager.CurrentLayer;
+                    IBoardView boardView = constr.IsRow ? state.CreateRowView(constr.Index) : state.CreateColView(constr.Index);
+                    var result = constr.ConstrainBoard(boardView);
 
-                    changed = (changed || change);
+                    if (result == BoardState.IntersectResult.NoSolution)
+                        return result;
+
+                    if (result == BoardState.IntersectResult.Changed)
+                    {
+                        changed = true;
+                    }
                 }
             }
 
-            return changed; 
+            return changed ? BoardState.IntersectResult.Changed : BoardState.IntersectResult.NoChange; 
         }
     }
 }
