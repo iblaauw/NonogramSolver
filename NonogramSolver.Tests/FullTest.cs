@@ -168,12 +168,12 @@ namespace NonogramSolver.Tests
             var row9 = BoardFactory.CreateConstraintSet(new[] { brownConstr2 });
 
             var col1 = BoardFactory.CreateConstraintSet(new[] { greenConstr2 });
-            var col2 = BoardFactory.CreateConstraintSet(new[] { greenConstr, greenConstr });
+            var col2 = BoardFactory.CreateConstraintSet(new[] { greenConstr2, greenConstr });
             var col3 = BoardFactory.CreateConstraintSet(new[] { greenConstr, lgreenConstr, greenConstr2 });
             var col4 = BoardFactory.CreateConstraintSet(new[] { greenConstr, lgreenConstr3, brownConstr3 });
             var col5 = BoardFactory.CreateConstraintSet(new[] { greenConstr, lgreenConstr3, brownConstr3 });
             var col6 = BoardFactory.CreateConstraintSet(new[] { greenConstr, lgreenConstr, greenConstr2 });
-            var col7 = BoardFactory.CreateConstraintSet(new[] { greenConstr, greenConstr });
+            var col7 = BoardFactory.CreateConstraintSet(new[] { greenConstr2, greenConstr });
             var col8 = BoardFactory.CreateConstraintSet(new[] { greenConstr2 });
 
             var rows = new[] { row1, row2, row3, row4, row5, row6, row7, row8, row9 };

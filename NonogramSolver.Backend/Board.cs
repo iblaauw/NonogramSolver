@@ -93,29 +93,55 @@ namespace NonogramSolver.Backend
 
         private void SolverLoop()
         {
+            while (true)
+            {
+                bool success = OuterConstraintLoop();
+                if (!success)
+                {
+                    // We hit "no solution" for the current layer. Pop it, and push a new one with a different guess
+                    DoPopLayer();
+                    DoPushLayer();
+                    continue;
+                }
+
+                if (boardManager.CurrentLayer.CalculateIsSolved())
+                    break;
+
+                DoPushLayer();
+            }
+
+            //do
+            //{
+            //    bool success = OuterConstraintLoop();
+            //    if (!success)
+            //    {
+            //        // We hit "no solution" for the current layer. Pop it, and push a new one with another guess (done immediately after this if)
+            //        DoPopLayer();
+            //    }
+
+            //    DoPushLayer();
+            //}
+            //while (!boardManager.CurrentLayer.CalculateIsSolved());
+        }
+
+        // Returns true if it completes normally, and false if a NoSolution situation was found
+        private bool OuterConstraintLoop()
+        {
             bool changed = false;
             do
             {
-                bool rchange = OuterConstraintLoop(rowConstraintList);
-                bool cchange = OuterConstraintLoop(colConstraintList);
-                changed = rchange || cchange;
-            } while (changed);
-        }
-
-        private bool OuterConstraintLoop(IEnumerable<ConstraintList> constraints)
-        {
-            var result = InnerConstraintLoop(constraints);
-            switch (result)
-            {
-                case BoardState.IntersectResult.NoSolution:
-                    throw new UnsolvableBoardException(); // TODO: do push / pop logic here...
-                case BoardState.IntersectResult.Changed:
-                    return true;
-                case BoardState.IntersectResult.NoChange:
+                var rowResult = InnerConstraintLoop(rowConstraintList);
+                if (rowResult == BoardState.IntersectResult.NoSolution)
                     return false;
-                default:
-                    throw new InvalidOperationException("Unreachable code");
-            }
+
+                var colResult = InnerConstraintLoop(colConstraintList);
+                if (colResult == BoardState.IntersectResult.NoSolution)
+                    return false;
+
+                changed = (rowResult == BoardState.IntersectResult.Changed) || (rowResult == BoardState.IntersectResult.Changed);
+            } while (changed);
+
+            return true;
         }
 
         private BoardState.IntersectResult InnerConstraintLoop(IEnumerable<ConstraintList> constraints)
@@ -140,6 +166,52 @@ namespace NonogramSolver.Backend
             }
 
             return changed ? BoardState.IntersectResult.Changed : BoardState.IntersectResult.NoChange; 
+        }
+
+        // Returns false if we have exhausted all options
+        private void DoPushLayer()
+        {
+            // TODO: this is a bit aggressive, but not a huge hit to performance
+            SetAllConstraintsDirty();
+
+            BoardState boardState = boardManager.CurrentLayer;
+            Guesser.Guess guess = boardState.Guesser.GenerateNext(boardState);
+
+            // If guess is null, we've tried everything for the current board state, go back one and try again
+            // Repeat this in a loop until we succeed or we've hit the end of our pushed layers
+            while (guess == null)
+            {
+                DoPopLayer();
+                boardState = boardManager.CurrentLayer;
+                guess = boardState.Guesser.GenerateNext(boardState);
+            }
+
+            boardManager.PushLayer();
+
+            // Apply our guess to the new layer
+            // (Not the current layer, or we can't undo it...)
+            ColorSet guessColor = ColorSet.CreateSingle(guess.Color);
+            boardManager.CurrentLayer.SetColor(guess.X, guess.Y, guessColor);
+        }
+
+        private void DoPopLayer()
+        {
+            // Popping a layer should _never_ fail. If it does, then we have exhausted all possibilities
+            if (!boardManager.PopLayer())
+                throw new UnsolvableBoardException();
+        }
+
+        private void SetAllConstraintsDirty()
+        {
+            foreach (var constr in rowConstraintList)
+            {
+                constr.SetDirty();
+            }
+
+            foreach (var constr in colConstraintList)
+            {
+                constr.SetDirty();
+            }
         }
     }
 }

@@ -59,6 +59,11 @@ namespace NonogramSolver.Backend
             return new ColorSet(mask);
         }
 
+        public static ColorSet CreateSingle(uint color)
+        {
+            return new ColorSet(ColorToMask(color));
+        }
+
         public ColorSet Union(ColorSet other)
         {
             return new ColorSet(value | other.value);
@@ -114,6 +119,11 @@ namespace NonogramSolver.Backend
         public override int GetHashCode()
         {
             return (int)value;
+        }
+
+        public override string ToString()
+        {
+            return value.ToString();
         }
 
         private static uint ColorToMask(uint color)

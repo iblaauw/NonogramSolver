@@ -115,6 +115,7 @@
     <Compile Include="Constraint.cs" />
     <Compile Include="ConstraintList.cs" />
     <Compile Include="ConstraintSegment.cs" />
+    <Compile Include="Guesser.cs" />
     <Compile Include="IBoard.cs" />
     <Compile Include="IConstraintList.cs" />
     <Compile Include="IConstraintSet.cs" />

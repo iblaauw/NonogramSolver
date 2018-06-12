@@ -22,14 +22,22 @@ namespace NonogramSolver.Backend
 
         public void PushLayer()
         {
-            BoardState newState = currentLayer.Clone();
+            BoardState newState = currentLayer.CreateNewLayer();
             previousStates.Push(currentLayer);
             currentLayer = newState;
         }
 
-        public void PopLayer()
+        /// <summary>
+        /// Pops a BoardState layer from the state stack
+        /// </summary>
+        /// <returns>True if a layer was successfully popped. False if there were no more layers to pop</returns>
+        public bool PopLayer()
         {
+            if (previousStates.Count == 0)
+                return false;
+
             currentLayer = previousStates.Pop();
+            return true;
         }
     }
 }

@@ -17,8 +17,9 @@ namespace NonogramSolver.Backend
 
     class BoardState
     {
-        ColorSet[,] colors;
-        Board owningBoard;
+        private ColorSet[,] colors;
+        private Board owningBoard;
+        private readonly Guesser guesser;
 
         public enum IntersectResult
         {
@@ -30,6 +31,7 @@ namespace NonogramSolver.Backend
         public BoardState(Board board)
         {
             owningBoard = board;
+            guesser = new Guesser(board);
             CreateTiles();
         }
 
@@ -38,7 +40,12 @@ namespace NonogramSolver.Backend
             // A copy constructor, essentially
             colors = (ColorSet[,])other.colors.Clone();
             owningBoard = other.owningBoard;
+            guesser = new Guesser(other.owningBoard);
         }
+
+        public ColorSet this[int x, int y] => colors[x, y];
+
+        public Guesser Guesser => guesser;
 
         public ISolvedBoard ExtractSolvedBoard()
         {
@@ -71,9 +78,33 @@ namespace NonogramSolver.Backend
             return new ColView(index, this);
         }
 
-        public BoardState Clone()
+        public BoardState CreateNewLayer()
         {
             return new BoardState(this);
+        }
+
+        public void SetColor(int x, int y, ColorSet value)
+        {
+            ColorSet original = colors[x, y];
+            colors[x, y] = value;
+            if (original != value)
+            {
+                owningBoard.OnTileDirty(x, y);
+            }
+        }
+
+        public bool CalculateIsSolved()
+        {
+            for (int i = 0; i < owningBoard.NumRows; i++)
+            {
+                for (int j = 0; j < owningBoard.NumColumns; j++)
+                {
+                    ColorSet val = colors[i, j];
+                    if (!val.IsSingle())
+                        return false;
+                }
+            }
+            return true;
         }
 
         private void CreateTiles()
