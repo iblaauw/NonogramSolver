@@ -262,5 +262,145 @@ namespace NonogramSolver.Tests
             Assert.True(solved[8, 6] == 0);
             Assert.True(solved[8, 7] == 0);
         }
+
+        [TestMethod]
+        public void FlagTest()
+        {
+            const uint W = 0;
+            const uint B = 1;
+            const uint G = 2;
+
+            uint[,] flagImage = new uint[5, 5]
+            {
+                { W, W, B, B, B },
+                { W, B, B, B, W },
+                { W, B, W, G, W },
+                { W, G, G, G, W },
+                { G, G, G, W, W },
+            };
+
+            TestImage(flagImage, G);
+        }
+
+        [TestMethod]
+        public void LadybugTest()
+        {
+            const uint W = 0;
+            const uint B = 1;
+            const uint R = 2;
+            const uint G = 3;
+
+            uint[,] ladybugImage = new uint[20, 20]
+            {
+                {  W, W, W, W, B, B, W, W, W, B, B, B, W, W, W, W, B, B, W, W },
+                {  W, W, W, W, W, B, B, B, W, B, W, W, W, W, B, B, B, W, W, W },
+                {  W, W, W, W, W, W, W, B, R, R, R, R, B, B, B, W, B, B, W, B },
+                {  W, W, W, W, B, R, R, R, R, R, R, R, B, B, B, B, B, B, B, B },
+                {  W, W, W, B, R, R, R, R, R, R, R, W, B, B, B, B, B, W, B, W },
+                {  W, W, B, R, R, R, R, R, R, R, R, W, W, B, B, B, B, B, B, W },
+                {  W, W, B, R, R, R, B, B, R, R, R, B, B, B, B, B, B, B, W, W },
+                {  W, B, R, R, R, R, B, B, R, R, R, B, B, B, W, B, B, B, W, W },
+                {  W, B, R, R, R, R, R, R, R, R, R, B, B, B, W, W, R, R, W, B },
+                {  W, R, R, R, R, R, R, R, R, R, B, R, R, R, R, R, R, R, W, B },
+                {  W, R, R, R, R, R, R, R, R, B, R, R, R, R, R, R, R, R, B, B },
+                {  B, B, R, B, B, R, R, R, B, R, R, R, R, R, R, R, R, R, W, W },
+                {  B, W, R, B, B, R, R, B, R, R, R, R, B, B, R, R, R, B, W, W },
+                {  B, G, R, R, R, R, B, R, R, R, R, R, B, B, R, R, R, B, B, W },
+                {  W, G, G, R, R, B, R, R, R, R, R, R, R, R, R, R, R, W, B, W },
+                {  W, G, G, R, B, R, R, R, B, B, R, R, R, R, R, R, B, W, B, B },
+                {  W, G, W, W, R, R, R, R, B, B, R, R, R, R, R, B, W, W, W, W },
+                {  W, W, W, W, G, G, R, R, R, R, R, R, R, B, B, W, W, W, W, W },
+                {  W, W, W, G, G, G, G, W, B, R, R, B, B, W, W, W, W, W, W, W },
+                {  W, W, W, W, W, W, B, B, B, W, W, W, W, W, W, W, W, W, W, W },
+            };
+
+            TestImage(ladybugImage, G);
+        }
+
+        private static void TestImage(uint[,] image, uint maxColor)
+        {
+            IBoard board = CreateBoardFromImage(image, maxColor);
+            ISolvedBoard solved = board.Solve();
+            CompareSolution(image, solved);
+        }
+
+        private static IBoard CreateBoardFromImage(uint[,] image, uint maxColor)
+        {
+            int numRows = image.GetLength(0);
+            int numCols = image.GetLength(1);
+
+            var rowConstraints = Enumerable.Range(0, numRows).Select(i => CreateRowConstraint(i, image, numCols));
+            var colConstraints = Enumerable.Range(0, numCols).Select(i => CreateColConstraint(i, image, numRows));
+
+            return BoardFactory.CreateBoard(rowConstraints, colConstraints, maxColor);
+        }
+
+        private static void CompareSolution(uint[,] image, ISolvedBoard solvedBoard)
+        {
+            int numRows = image.GetLength(0);
+            int numCols = image.GetLength(1);
+
+            for (int row = 0; row < numRows; row++)
+            {
+                for (int col = 0; col < numCols; col++)
+                {
+                    Assert.True(image[row, col] == solvedBoard[row, col]);
+                }
+            }
+        }
+
+        private static IConstraintSet CreateRowConstraint(int index, uint[,] image, int numCols)
+        {
+            Func<int, uint> getter = col => image[index, col];
+            return CreateGenericConstraint(getter, numCols);
+        }
+
+        private static IConstraintSet CreateColConstraint(int index, uint[,] image, int numRows)
+        {
+            Func<int, uint> getter = row => image[row, index];
+            return CreateGenericConstraint(getter, numRows);
+        }
+
+        private static IConstraintSet CreateGenericConstraint(Func<int, uint> getter, int count)
+        {
+            Constraint current = new Constraint();
+            List<Constraint> constraints = new List<Constraint>();
+            for (int i = 0; i < count; i++)
+            {
+                uint color = getter(i);
+                if (current.number == 0)
+                {
+                    if (color == 0)
+                        continue;
+
+                    current.number = 1;
+                    current.color = color;
+                }
+                else
+                {
+                    if (color == current.color)
+                    {
+                        current.number++;
+                    }
+                    else
+                    {
+                        constraints.Add(current);
+                        current = new Constraint();
+                        if (color != 0)
+                        {
+                            current.color = color;
+                            current.number = 1;
+                        }
+                    }
+                }
+            }
+
+            if (current.number != 0)
+            {
+                constraints.Add(current);
+            }
+
+            return BoardFactory.CreateConstraintSet(constraints);
+        }
     }
 }
