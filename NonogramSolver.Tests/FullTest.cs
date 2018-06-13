@@ -326,13 +326,9 @@ namespace NonogramSolver.Tests
 
         private static IBoard CreateBoardFromImage(uint[,] image, uint maxColor)
         {
-            int numRows = image.GetLength(0);
-            int numCols = image.GetLength(1);
+            BoardFactory.CreateConstraintsForGrid(image, out IReadOnlyList<IConstraintSet> rows, out IReadOnlyList<IConstraintSet> cols);
 
-            var rowConstraints = Enumerable.Range(0, numRows).Select(i => CreateRowConstraint(i, image, numCols));
-            var colConstraints = Enumerable.Range(0, numCols).Select(i => CreateColConstraint(i, image, numRows));
-
-            return BoardFactory.CreateBoard(rowConstraints, colConstraints, maxColor);
+            return BoardFactory.CreateBoard(rows, cols, maxColor);
         }
 
         private static void CompareSolution(uint[,] image, ISolvedBoard solvedBoard)
@@ -349,58 +345,5 @@ namespace NonogramSolver.Tests
             }
         }
 
-        private static IConstraintSet CreateRowConstraint(int index, uint[,] image, int numCols)
-        {
-            Func<int, uint> getter = col => image[index, col];
-            return CreateGenericConstraint(getter, numCols);
-        }
-
-        private static IConstraintSet CreateColConstraint(int index, uint[,] image, int numRows)
-        {
-            Func<int, uint> getter = row => image[row, index];
-            return CreateGenericConstraint(getter, numRows);
-        }
-
-        private static IConstraintSet CreateGenericConstraint(Func<int, uint> getter, int count)
-        {
-            Constraint current = new Constraint();
-            List<Constraint> constraints = new List<Constraint>();
-            for (int i = 0; i < count; i++)
-            {
-                uint color = getter(i);
-                if (current.number == 0)
-                {
-                    if (color == 0)
-                        continue;
-
-                    current.number = 1;
-                    current.color = color;
-                }
-                else
-                {
-                    if (color == current.color)
-                    {
-                        current.number++;
-                    }
-                    else
-                    {
-                        constraints.Add(current);
-                        current = new Constraint();
-                        if (color != 0)
-                        {
-                            current.color = color;
-                            current.number = 1;
-                        }
-                    }
-                }
-            }
-
-            if (current.number != 0)
-            {
-                constraints.Add(current);
-            }
-
-            return BoardFactory.CreateConstraintSet(constraints);
-        }
     }
 }

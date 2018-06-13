@@ -19,5 +19,14 @@ namespace NonogramSolver.Backend
         {
             return new ConstraintSet(constraints);
         }
+
+        public static void CreateConstraintsForGrid(uint[,] grid, out IReadOnlyList<IConstraintSet> rowConstraints, out IReadOnlyList<IConstraintSet> colConstraints)
+        {
+            ConstraintExtractor extractor = new ConstraintExtractor(grid);
+            extractor.Extract();
+
+            rowConstraints = extractor.RowConstraints;
+            colConstraints = extractor.ColumnConstraints;
+        }
     }
 }
