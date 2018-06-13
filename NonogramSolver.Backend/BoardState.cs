@@ -12,7 +12,7 @@ namespace NonogramSolver.Backend
     {
         ColorSet this[int index] { get; }
         int Count { get; }
-        BoardState.IntersectResult IntersectAll(IReadOnlyList<ColorSet> colorSets);
+        ConstrainResult IntersectAll(IReadOnlyList<ColorSet> colorSets);
     }
 
     class BoardState
@@ -139,26 +139,24 @@ namespace NonogramSolver.Backend
 
             public int Count => owner.owningBoard.NumColumns;
 
-            public IntersectResult IntersectAll(IReadOnlyList<ColorSet> colorSets)
+            public ConstrainResult IntersectAll(IReadOnlyList<ColorSet> colorSets)
             {
-                bool changed = false;
                 for (int i = 0; i < Count; i++)
                 {
                     var color = owner.colors[rowIndex, i];
                     ColorSet newColor = color.Intersect(colorSets[i]);
 
                     if (newColor.IsEmpty)
-                        return IntersectResult.NoSolution;
+                        return ConstrainResult.NoSolution;
 
-                    if (newColor == color)
-                        continue;
-
-                    owner.colors[rowIndex, i] = newColor;
-                    changed = true;
-                    owner.owningBoard.OnTileDirty(rowIndex, i);
+                    if (newColor != color)
+                    {
+                        owner.colors[rowIndex, i] = newColor;
+                        owner.owningBoard.OnTileDirty(rowIndex, i);
+                    }
                 }
 
-                return changed ? IntersectResult.Changed : IntersectResult.NoChange;
+                return ConstrainResult.Success;
             }
         }
 
@@ -177,27 +175,24 @@ namespace NonogramSolver.Backend
 
             public int Count => owner.owningBoard.NumRows;
 
-            public IntersectResult IntersectAll(IReadOnlyList<ColorSet> colorSets)
+            public ConstrainResult IntersectAll(IReadOnlyList<ColorSet> colorSets)
             {
-                bool changed = false;
-
                 for (int i = 0; i < Count; i++)
                 {
                     var color = owner.colors[i, colIndex];
                     ColorSet newColor = color.Intersect(colorSets[i]);
 
                     if (newColor.IsEmpty)
-                        return IntersectResult.NoSolution;
+                        return ConstrainResult.NoSolution;
 
-                    if (newColor == color)
-                        continue;
-
-                    owner.colors[i, colIndex] = newColor;
-                    changed = true;
-                    owner.owningBoard.OnTileDirty(i, colIndex);
+                    if (newColor != color)
+                    {
+                        owner.colors[i, colIndex] = newColor;
+                        owner.owningBoard.OnTileDirty(i, colIndex);
+                    }
                 }
 
-                return changed ? IntersectResult.Changed : IntersectResult.NoChange;
+                return ConstrainResult.Success;
             }
         }
     }

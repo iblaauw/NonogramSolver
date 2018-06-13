@@ -14,11 +14,19 @@ namespace NonogramSolver.Backend
         public UnsolvableBoardException(string message, Exception inner) : base(message, inner) { }
     }
 
+    internal enum ConstrainResult
+    {
+        Success,
+        NoSolution,
+    }
+
     internal class Board : IBoard
     {
         private BoardManager boardManager;
         private List<ConstraintList> rowConstraintList;
         private List<ConstraintList> colConstraintList;
+
+        private readonly Queue<ConstraintList> dirtyConstraints;
 
         public Board(IEnumerable<IConstraintSet> rowConstraints, IEnumerable<IConstraintSet> colConstraints, ColorSpace colors)
         {
@@ -30,6 +38,8 @@ namespace NonogramSolver.Backend
             ColorSpace = colors;
 
             boardManager = new BoardManager(this);
+
+            dirtyConstraints = new Queue<ConstraintList>();
 
             CreateConstraints();
         }
@@ -60,8 +70,8 @@ namespace NonogramSolver.Backend
 
         public void OnTileDirty(int row, int col)
         {
-            rowConstraintList[row].SetDirty();
-            colConstraintList[col].SetDirty();
+            dirtyConstraints.Enqueue(rowConstraintList[row]);
+            dirtyConstraints.Enqueue(colConstraintList[col]);
         }
 
         private void CreateConstraints()
@@ -95,8 +105,14 @@ namespace NonogramSolver.Backend
         {
             while (true)
             {
-                bool success = OuterConstraintLoop();
-                if (!success)
+                //bool success = OuterConstraintLoop();
+
+                // Apply constraints as much as possible
+                var result = ApplyConstraintsLoop();
+
+                //if (!success)
+                // if we are violating a constraint
+                if (result == ConstrainResult.NoSolution)
                 {
                     // We hit "no solution" for the current layer. Pop it, and push a new one with a different guess
                     DoPopLayer();
@@ -109,63 +125,26 @@ namespace NonogramSolver.Backend
 
                 DoPushLayer();
             }
-
-            //do
-            //{
-            //    bool success = OuterConstraintLoop();
-            //    if (!success)
-            //    {
-            //        // We hit "no solution" for the current layer. Pop it, and push a new one with another guess (done immediately after this if)
-            //        DoPopLayer();
-            //    }
-
-            //    DoPushLayer();
-            //}
-            //while (!boardManager.CurrentLayer.CalculateIsSolved());
         }
 
-        // Returns true if it completes normally, and false if a NoSolution situation was found
-        private bool OuterConstraintLoop()
+        private ConstrainResult ApplyConstraintsLoop()
         {
-            bool changed = false;
-            do
+            while (dirtyConstraints.Count > 0)
             {
-                var rowResult = InnerConstraintLoop(rowConstraintList);
-                if (rowResult == BoardState.IntersectResult.NoSolution)
-                    return false;
-
-                var colResult = InnerConstraintLoop(colConstraintList);
-                if (colResult == BoardState.IntersectResult.NoSolution)
-                    return false;
-
-                changed = (rowResult == BoardState.IntersectResult.Changed) || (rowResult == BoardState.IntersectResult.Changed);
-            } while (changed);
-
-            return true;
-        }
-
-        private BoardState.IntersectResult InnerConstraintLoop(IEnumerable<ConstraintList> constraints)
-        {
-            bool changed = false;
-            foreach (ConstraintList constr in constraints)
-            {
-                if (constr.IsDirty)
-                {
-                    BoardState state = boardManager.CurrentLayer;
-                    IBoardView boardView = constr.IsRow ? state.CreateRowView(constr.Index) : state.CreateColView(constr.Index);
-                    var result = constr.ConstrainBoard(boardView);
-
-                    if (result == BoardState.IntersectResult.NoSolution)
-                        return result;
-
-                    if (result == BoardState.IntersectResult.Changed)
-                    {
-                        changed = true;
-                    }
-                }
+                ConstraintList constraint = dirtyConstraints.Dequeue();
+                var result = ApplyConstraint(constraint);
+                if (result == ConstrainResult.NoSolution)
+                    return ConstrainResult.NoSolution;
             }
 
-            return changed ? BoardState.IntersectResult.Changed : BoardState.IntersectResult.NoChange; 
+            return ConstrainResult.Success;
+        }
+
+        private ConstrainResult ApplyConstraint(ConstraintList constraint)
+        {
+            BoardState state = boardManager.CurrentLayer;
+            IBoardView boardView = constraint.IsRow ? state.CreateRowView(constraint.Index) : state.CreateColView(constraint.Index);
+            return constraint.ConstrainBoard(boardView);
         }
 
         // Returns false if we have exhausted all options
@@ -205,12 +184,12 @@ namespace NonogramSolver.Backend
         {
             foreach (var constr in rowConstraintList)
             {
-                constr.SetDirty();
+                dirtyConstraints.Enqueue(constr);
             }
 
             foreach (var constr in colConstraintList)
             {
-                constr.SetDirty();
+                dirtyConstraints.Enqueue(constr);
             }
         }
     }

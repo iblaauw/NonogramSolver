@@ -9,12 +9,11 @@ namespace NonogramSolver.Backend
 {
     internal class ConstraintList : IList<Constraint> // TODO: the IList implement is probably unnecessary
     {
-        private List<Constraint> constraints;
+        private readonly List<Constraint> constraints;
         private readonly int boardSize;
 
         public ConstraintList(int index, bool isRow, int size)
         {
-            IsDirty = true;
             Index = index;
             boardSize = size;
             IsRow = isRow;
@@ -22,16 +21,10 @@ namespace NonogramSolver.Backend
             constraints = new List<Constraint>();
         }
 
-        public bool IsDirty { get; private set; }
         public int Index { get; private set; }
         public bool IsRow { get; private set; }
 
-        public void SetDirty()
-        {
-            IsDirty = true;
-        }
-
-        public BoardState.IntersectResult ConstrainBoard(IBoardView boardView)
+        public ConstrainResult ConstrainBoard(IBoardView boardView)
         {
             ConstraintSegment.CreateChain(constraints, out ConstraintSegment segmentBegin, out ConstraintSegment segmentEnd);
 
@@ -47,10 +40,8 @@ namespace NonogramSolver.Backend
                 }
             } while (segmentEnd.Bump(boardView.Count));
 
+            // TODO: this will place this constraint on the dirty list again, which is slightly redundant...
             var result = boardView.IntersectAll(finalColors);
-
-            // This has to be after the above IntersectAll, which will try to mark this constraint as Dirty
-            IsDirty = false;
 
             return result;
         }
