@@ -7,18 +7,17 @@ using System.Text;
 
 namespace NonogramSolver.Backend
 {
-    internal class ConstraintList : IList<Constraint> // TODO: the IList implement is probably unnecessary
+    internal class ConstraintList
     {
-        private readonly List<Constraint> constraints;
+        private readonly IConstraintSet constraintSet;
         private readonly int boardSize;
 
-        public ConstraintList(int index, bool isRow, int size)
+        public ConstraintList(int index, bool isRow, int size, IConstraintSet constraints)
         {
-            Index = index;
+            constraintSet = constraints;
             boardSize = size;
+            Index = index;
             IsRow = isRow;
-
-            constraints = new List<Constraint>();
         }
 
         public int Index { get; private set; }
@@ -26,7 +25,7 @@ namespace NonogramSolver.Backend
 
         public ConstrainResult ConstrainBoard(IBoardView boardView)
         {
-            ConstraintSegment.CreateChain(constraints, out ConstraintSegment segmentBegin, out ConstraintSegment segmentEnd);
+            ConstraintSegment.CreateChain(constraintSet, out ConstraintSegment segmentBegin, out ConstraintSegment segmentEnd);
 
             // Start final colors as completely empty: no colors possible at all
             ColorSet[] finalColors = new ColorSet[boardView.Count];
@@ -113,41 +112,5 @@ namespace NonogramSolver.Backend
                 into[i] = into[i].Union(from[i]);
             }
         }
-
-        #region IList Overrides
-        public Constraint this[int index]
-        {
-            get => constraints[index];
-            set
-            {
-                constraints[index] = value;
-            }
-        }
-
-        public int Count => constraints.Count;
-
-        public bool IsReadOnly => false;
-
-        public void Add(Constraint item) => constraints.Add(item);
-
-        public void Clear() => constraints.Clear();
-
-        public bool Contains(Constraint item) => constraints.Contains(item);
-
-        public void CopyTo(Constraint[] array, int arrayIndex) => constraints.CopyTo(array, arrayIndex);
-
-        public IEnumerator<Constraint> GetEnumerator() => constraints.GetEnumerator();
-
-        public int IndexOf(Constraint item) => constraints.IndexOf(item);
-
-        public void Insert(int index, Constraint item) => constraints.Insert(index, item);
-
-        public bool Remove(Constraint item) => constraints.Remove(item);
-
-        public void RemoveAt(int index) => constraints.RemoveAt(index);
-
-        IEnumerator IEnumerable.GetEnumerator() => constraints.GetEnumerator();
-
-        #endregion
     }
 }

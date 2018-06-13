@@ -76,29 +76,11 @@ namespace NonogramSolver.Backend
 
         private void CreateConstraints()
         {
-            rowConstraintList = Enumerable.Range(0, NumRows).Select(i => new ConstraintList(i, true, NumColumns)).ToList();
-            colConstraintList = Enumerable.Range(0, NumColumns).Select(i => new ConstraintList(i, false, NumRows)).ToList();
+            rowConstraintList = Enumerable.Range(0, NumRows).Select(i => new ConstraintList(i, true, NumColumns, RowConstraints[i])).ToList();
+            colConstraintList = Enumerable.Range(0, NumColumns).Select(i => new ConstraintList(i, false, NumRows, ColumnConstraints[i])).ToList();
 
             Debug.Assert(rowConstraintList.Count == NumRows);
             Debug.Assert(colConstraintList.Count == NumColumns);
-
-            SetupConstraintLists(rowConstraintList, RowConstraints);
-            SetupConstraintLists(colConstraintList, ColumnConstraints);
-        }
-
-        private static void SetupConstraintLists(IReadOnlyList<ConstraintList> lists, IReadOnlyList<IConstraintSet> constraints)
-        {
-            // Pair each ConstraintList with its corresponding item IConstraintSet
-            var pairs = lists.Zip(constraints, (l, s) => new Tuple<ConstraintList, IConstraintSet>(l, s));
-
-            // Flatten the IConstraintSet, so now each contained Constraint is paired with its ConstraintList
-            var listConstraintPairs = pairs.SelectMany(t => t.Item2, (t, c) => new Tuple<ConstraintList, Constraint>(t.Item1, c));
-
-            // Add the constraint to its corresponding ConstraintList
-            foreach (var tuple in listConstraintPairs)
-            {
-                tuple.Item1.Add(tuple.Item2);
-            }
         }
 
         private void SolverLoop()
@@ -150,9 +132,6 @@ namespace NonogramSolver.Backend
         // Returns false if we have exhausted all options
         private void DoPushLayer()
         {
-            // TODO: this is a bit aggressive, but not a huge hit to performance
-            SetAllConstraintsDirty();
-
             BoardState boardState = boardManager.CurrentLayer;
             Guesser.Guess guess = boardState.Guesser.GenerateNext(boardState);
 
