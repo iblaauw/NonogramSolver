@@ -97,6 +97,7 @@
     </Compile>
     <Compile Include="Assert.cs" />
     <Compile Include="ColorSetTest.cs" />
+    <Compile Include="ConstraintHelper.cs" />
     <Compile Include="ConstraintSegmentTest.cs" />
     <Compile Include="DummyTest.cs" />
     <Compile Include="FullTest.cs" />

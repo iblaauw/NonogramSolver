@@ -317,6 +317,128 @@ namespace NonogramSolver.Tests
             TestImage(ladybugImage, G);
         }
 
+        [TestMethod]
+        public void SolvingTest()
+        {
+            ConstraintHelper Black = new ConstraintHelper(1);
+            ConstraintHelper Orange = new ConstraintHelper(2);
+            ConstraintHelper LightBlue = new ConstraintHelper(3);
+            ConstraintHelper DarkBlue = new ConstraintHelper(4);
+
+            List<IConstraintHelper> rowConstraintHelpers = new List<IConstraintHelper>()
+            {
+                9*LightBlue + 4*Black + 9*LightBlue,
+                5*LightBlue + 3*LightBlue + 3*Black + 5*Black + 7*LightBlue,
+                3*LightBlue + 2*LightBlue + 2*Black + 10*Black + 6*LightBlue,
+                6*LightBlue + 15*Black + 2*LightBlue,
+                3*LightBlue + 17*Black + 5*LightBlue,
+
+                5*LightBlue + 18*Black + 5*LightBlue,
+                4*LightBlue + 7*Black + 3*Black + 4*Black + 3*LightBlue,
+                6*Black + Black + 3*Black + 3*LightBlue,
+                7*Black + 3*Black,
+                6*Black + 2*Black + 2*Black + 2*Black,
+
+                6*Black + Black + 2*Black + Black + 2*Black + 2*Black,
+                6*Black + Black + Black + Black + Black + 3*Black,
+                5*Black + 4*Black + 2*Orange + 2*Black + 3*Black,
+                4*Black + Black + 4*Orange + 2*Black,
+                4*Black + Black + 3*Orange + 2*Black,
+                
+                3*Black + Black + Orange + 2*Orange,
+                9*DarkBlue + 2*Black + 3*Black + 6*DarkBlue,
+                10*DarkBlue + 6*Black + 4*Black + 7*DarkBlue,
+                6*DarkBlue + 6*Black + 2*Black,
+                6*Black + 2*Black + 4*DarkBlue,
+
+                4*DarkBlue + 6*Black + 4*Black + 2*DarkBlue,
+                3*DarkBlue + 7*Black + 7*Black,
+                3*DarkBlue + 6*Black + 6*Black,
+                7*Black + 5*Black + 2*DarkBlue,
+                2*DarkBlue + LightBlue + 6*Black + 3*Black,
+
+                3*LightBlue + 6*Black + 2*Black + 2*LightBlue,
+                3*LightBlue + 6*Black + Black + 3*LightBlue,
+                2*LightBlue + 4*Black + 2*Black + 2*Black + 2*Black + 2*Black + 2*LightBlue,
+                LightBlue + 2*Black + 2*Black + Black + Orange + Black + Orange + 2*Black + Black + Orange + Black + LightBlue,
+                2*LightBlue + Black + Black + 2*Black + Black + 5*Orange + Black + 3*Orange + Black + 2*LightBlue,
+
+                2*LightBlue + 5*Black + Black + 4*Orange + Black + Black + 4*Orange + Black + 3*LightBlue,
+                4*LightBlue + 6*Black + 4*Orange + Black + 2*Black + 3*Orange + Black + 3*LightBlue,
+                DarkBlue + 6*LightBlue + 6*Black + 2*Orange + 4*Black + 2*Orange + 2*Black + 3*LightBlue + 2*DarkBlue,
+                3*DarkBlue + 6*LightBlue + 4*Black + 2*Orange + Black + 3*Black + 4*LightBlue + 3*DarkBlue,
+                4*DarkBlue + 4*LightBlue + 2*Black + 2*LightBlue + 4*DarkBlue,
+
+                6*DarkBlue + 4*LightBlue + LightBlue + 3*DarkBlue,
+                5*DarkBlue + 2*LightBlue + 2*LightBlue + 3*DarkBlue,
+                3*DarkBlue + 5*LightBlue + 3*LightBlue + 3*DarkBlue,
+                4*DarkBlue + 8*LightBlue + 5*LightBlue + 2*DarkBlue,
+                6*DarkBlue + 20*LightBlue + 3*DarkBlue,
+
+                8*DarkBlue + 14*LightBlue + 4*DarkBlue,
+                7*DarkBlue + 12*LightBlue + 4*DarkBlue,
+                10*DarkBlue + 3*LightBlue + 6*DarkBlue,
+                19*DarkBlue,
+                14*DarkBlue
+            };
+
+            Assert.True(rowConstraintHelpers.Count == 45);
+
+            List<IConstraintHelper> colConstraintHelpers = new List<IConstraintHelper>()
+            {
+                LightBlue + 2*DarkBlue + DarkBlue + DarkBlue + 3*LightBlue + 3*DarkBlue,
+                2*LightBlue + LightBlue + 3*DarkBlue + DarkBlue + DarkBlue + DarkBlue + 2*LightBlue + 4*LightBlue + 3*DarkBlue,
+                3*LightBlue + LightBlue + 3*DarkBlue + DarkBlue + DarkBlue + LightBlue + 3*LightBlue + 3*DarkBlue,
+                2*LightBlue + LightBlue + 2*LightBlue + 3*DarkBlue + 2*DarkBlue + 2*LightBlue + 3*LightBlue + 3*DarkBlue,
+                2*LightBlue + 4*LightBlue + 3*DarkBlue + 2*DarkBlue + LightBlue + 4*LightBlue + 2*DarkBlue + DarkBlue,
+
+                2*LightBlue + 4*LightBlue + 3*DarkBlue + DarkBlue + 2*LightBlue + 3*LightBlue + 2*DarkBlue + 2*DarkBlue,
+                LightBlue + 2*LightBlue + LightBlue + 3*DarkBlue + 5*Black + 3*LightBlue + 5*DarkBlue,
+                LightBlue + 2*LightBlue + 2*DarkBlue + 8*Black + 3*LightBlue + 5*DarkBlue,
+                3*LightBlue + 5*Black + 2*DarkBlue + 10*Black + LightBlue + 2*LightBlue + 4*DarkBlue,
+                2*LightBlue + 10*Black + DarkBlue + 9*Black + 4*LightBlue + 3*DarkBlue,
+
+                2*LightBlue + 12*Black + 9*Black + 2*Black + LightBlue + 3*LightBlue + 2*DarkBlue,
+                LightBlue + 13*Black + 12*Black + 2*Black + 3*LightBlue + 2*DarkBlue + DarkBlue,
+                22*Black + 6*Black + 3*LightBlue + 4*DarkBlue + 10*Black + 6*Black + 4*Black + 3*LightBlue + 5*DarkBlue,
+                10*Black + 6*Black + 4*Black + 3*LightBlue + 5*DarkBlue,
+                Black + 6*Black + 3*Black + 4*Black + 2*LightBlue + 5*DarkBlue,
+
+                6*Black + 2*Black + 2*Black + 3*Black + 3*LightBlue + 4*DarkBlue,
+                5*Black + Black + Black + Black + 7*Black + 4*LightBlue + 3*DarkBlue,
+                Black + 4*Black + 2*Black + Black + Black + 4*Orange + 2*Black + 3*LightBlue + 3*DarkBlue,
+                6*Black + 4*Black + Black + 5*Orange + Black + 3*LightBlue + 3*DarkBlue,
+                7*Black + Black + Orange + Black + Black + 6*Orange + Black + 3*LightBlue + 3*DarkBlue,
+
+                8*Black + 3*Orange + Black + 2*Black + 3*Orange + 2*Black + 3*LightBlue + 3*DarkBlue,
+                6*Black + 2*Black + 4*Orange + Black + Orange + 3*Black + 3*LightBlue + 3*DarkBlue,
+                5*Black + Black + Black + 2*Orange + Black + 4*LightBlue + 2*DarkBlue,
+                4*Black + 2*Black + Black + 2*Black + 3*Black + 4*LightBlue + 2*DarkBlue,
+                5*Black + 2*Black + 4*Black + 2*Black + Orange + Black + 4*LightBlue + 2*DarkBlue,
+
+                LightBlue + 6*Black + 2*Black + 3*Black + Black + 3*Orange + Black + 4*LightBlue + 3*DarkBlue,
+                LightBlue + 9*Black + 3*Black + 4*Black + 2*Black + 3*Orange + Black + 4*LightBlue + 3*DarkBlue,
+                LightBlue + LightBlue + 11*Black + 8*Black + 4*Orange + Black + 5*LightBlue + 2*DarkBlue,
+                4*LightBlue + 4*Black + DarkBlue + 5*Black + Black + 2*Orange + Black + LightBlue + 4*Black + 3*DarkBlue,
+                5*LightBlue + 2*DarkBlue + 4*Black + LightBlue + 2*Black + 3*LightBlue + 4*LightBlue + 5*DarkBlue,
+
+                3*LightBlue + 2*LightBlue + LightBlue + 2*DarkBlue + DarkBlue + 3*Black + 2*LightBlue + 6*LightBlue + 6*DarkBlue,
+                3*LightBlue + 2*LightBlue + LightBlue + 2*DarkBlue + DarkBlue + 2*Black + LightBlue + 4*LightBlue + 8*DarkBlue,
+                3*LightBlue + 4*LightBlue + 2*DarkBlue + DarkBlue + 2*LightBlue + 3*LightBlue + 6*DarkBlue + 2*DarkBlue,
+                2*LightBlue + 3*LightBlue + 2*DarkBlue + 2*DarkBlue + DarkBlue + 4*LightBlue + 5*DarkBlue,
+                LightBlue + 2*LightBlue + 2*DarkBlue + DarkBlue + DarkBlue + 2*DarkBlue
+            };
+
+            Assert.True(colConstraintHelpers.Count == 35);
+
+            var rowConstraints = rowConstraintHelpers.Select(h => h.ToSet());
+            var colConstraints = colConstraintHelpers.Select(h => h.ToSet());
+
+            IBoard board = BoardFactory.CreateBoard(rowConstraints, colConstraints, 4);
+            ISolvedBoard solved = board.Solve();
+            Assert.True(solved != null);
+        }
+
         private static void TestImage(uint[,] image, uint maxColor)
         {
             IBoard board = CreateBoardFromImage(image, maxColor);

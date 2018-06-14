@@ -22,6 +22,7 @@ namespace NonogramSolver.Backend
 
         public int Index { get; private set; }
         public bool IsRow { get; private set; }
+        public bool IsDirty { get; set; } = false;
 
         public ConstrainResult ConstrainBoard(IBoardView boardView)
         {
@@ -32,7 +33,7 @@ namespace NonogramSolver.Backend
 
             do
             {
-                IReadOnlyList<ColorSet> segmentColors = GetColorsFromSegments(segmentBegin);
+                IReadOnlyList<uint> segmentColors = GetColorsFromSegments(segmentBegin);
                 if (AreCompatible(boardView, segmentColors))
                 {
                     Merge(segmentColors, finalColors);
@@ -45,12 +46,12 @@ namespace NonogramSolver.Backend
             return result;
         }
 
-        private IReadOnlyList<ColorSet> GetColorsFromSegments(ConstraintSegment begin)
+        private IReadOnlyList<uint> GetColorsFromSegments(ConstraintSegment begin)
         {
-            ColorSet[] colorSets = new ColorSet[boardSize];
+            uint[] colorSets = new uint[boardSize];
 
             ConstraintSegment current = begin;
-            ColorSet emptyColor = ColorSet.Empty.AddColor(ColorSpace.Empty);
+            uint emptyColor = ColorSpace.Empty; //ColorSet emptyColor = ColorSet.Empty.AddColor(ColorSpace.Empty);
 
             int i = 0;
 
@@ -64,10 +65,9 @@ namespace NonogramSolver.Backend
             {
                 Debug.Assert(i == current.StartIndex);
                 uint currentColor = current.Constraint.color;
-                ColorSet currentColorSet = ColorSet.Empty.AddColor(currentColor);
                 while (i != current.EndIndex)
                 {
-                    colorSets[i] = currentColorSet;
+                    colorSets[i] = currentColor;
                     i++;
                 }
 
@@ -83,33 +83,25 @@ namespace NonogramSolver.Backend
             return colorSets;
         }
 
-        private bool AreCompatible(IReadOnlyList<ColorSet> boardColors, IReadOnlyList<ColorSet> segmentColors)
-        {
-            Debug.Assert(boardColors.Count == segmentColors.Count);
-            var contained = boardColors.Zip(segmentColors, (b, s) => b.Intersect(s) != ColorSet.Empty);
-            return contained.All(b => b);
-        }
-
-        private bool AreCompatible(IBoardView boardColors, IReadOnlyList<ColorSet> segmentColors)
+        private bool AreCompatible(IBoardView boardColors, IReadOnlyList<uint> segmentColors)
         {
             Debug.Assert(boardColors.Count == segmentColors.Count);
             for (int i = 0; i < segmentColors.Count; i++)
             {
-                ColorSet result = boardColors[i].Intersect(segmentColors[i]);
-                if (result.IsEmpty)
+                if (!boardColors[i].HasColor(segmentColors[i]))
                     return false;
             }
 
             return true;
         }
 
-        private void Merge(IReadOnlyList<ColorSet> from, ColorSet[] into)
+        private void Merge(IReadOnlyList<uint> from, ColorSet[] into)
         {
             Debug.Assert(from.Count == into.Length);
 
             for (int i = 0; i < from.Count; i++)
             {
-                into[i] = into[i].Union(from[i]);
+                into[i] = into[i].AddColor(from[i]);
             }
         }
     }

@@ -70,8 +70,19 @@ namespace NonogramSolver.Backend
 
         public void OnTileDirty(int row, int col)
         {
-            dirtyConstraints.Enqueue(rowConstraintList[row]);
-            dirtyConstraints.Enqueue(colConstraintList[col]);
+            var rowConstr = rowConstraintList[row];
+            if (!rowConstr.IsDirty)
+            {
+                dirtyConstraints.Enqueue(rowConstr);
+                rowConstr.IsDirty = true;
+            }
+
+            var colConstr = colConstraintList[col];
+            if (!colConstr.IsDirty)
+            {
+                dirtyConstraints.Enqueue(colConstr);
+                colConstr.IsDirty = true;
+            }
         }
 
         private void CreateConstraints()
@@ -96,11 +107,15 @@ namespace NonogramSolver.Backend
                 // if we are violating a constraint
                 if (result == ConstrainResult.NoSolution)
                 {
+                    Debug.WriteLine("No Solution hit");
+
                     // We hit "no solution" for the current layer. Pop it, and push a new one with a different guess
                     DoPopLayer();
                     DoPushLayer();
                     continue;
                 }
+
+                Debug.WriteLine("Loop finished");
 
                 if (boardManager.CurrentLayer.CalculateIsSolved())
                     break;
@@ -114,6 +129,8 @@ namespace NonogramSolver.Backend
             while (dirtyConstraints.Count > 0)
             {
                 ConstraintList constraint = dirtyConstraints.Dequeue();
+                Debug.Assert(constraint.IsDirty);
+                constraint.IsDirty = false;
                 var result = ApplyConstraint(constraint);
                 if (result == ConstrainResult.NoSolution)
                     return ConstrainResult.NoSolution;
@@ -157,6 +174,12 @@ namespace NonogramSolver.Backend
             // Popping a layer should _never_ fail. If it does, then we have exhausted all possibilities
             if (!boardManager.PopLayer())
                 throw new UnsolvableBoardException();
+
+            foreach (var constr in dirtyConstraints)
+            {
+                constr.IsDirty = false;
+            }
+            dirtyConstraints.Clear();
         }
 
         private void SetAllConstraintsDirty()
@@ -164,11 +187,13 @@ namespace NonogramSolver.Backend
             foreach (var constr in rowConstraintList)
             {
                 dirtyConstraints.Enqueue(constr);
+                constr.IsDirty = true;
             }
 
             foreach (var constr in colConstraintList)
             {
                 dirtyConstraints.Enqueue(constr);
+                constr.IsDirty = true;
             }
         }
     }
