@@ -112,6 +112,7 @@
     <Compile Include="BoardState.cs" />
     <Compile Include="ColorSet.cs" />
     <Compile Include="ColorSpace.cs" />
+    <Compile Include="Constrainer.cs" />
     <Compile Include="Constraint.cs" />
     <Compile Include="ConstraintExtractor.cs" />
     <Compile Include="ConstraintList.cs" />
@@ -122,6 +123,7 @@
     <Compile Include="IConstraintSet.cs" />
     <Compile Include="IProgressManager.cs" />
     <Compile Include="ISolvedBoard.cs" />
+    <Compile Include="PriorityQueue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <EmbeddedResource Include="Properties\NonogramSolver.Backend.rd.xml" />
   </ItemGroup>

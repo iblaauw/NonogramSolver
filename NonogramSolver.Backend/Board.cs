@@ -23,10 +23,10 @@ namespace NonogramSolver.Backend
     internal class Board : IBoard
     {
         private BoardManager boardManager;
-        private List<ConstraintList> rowConstraintList;
-        private List<ConstraintList> colConstraintList;
+        private List<Constrainer> rowConstraintList;
+        private List<Constrainer> colConstraintList;
 
-        private readonly Queue<ConstraintList> dirtyConstraints;
+        private readonly Queue<Constrainer> dirtyConstraints;
 
         public Board(IEnumerable<IConstraintSet> rowConstraints, IEnumerable<IConstraintSet> colConstraints, ColorSpace colors)
         {
@@ -39,7 +39,7 @@ namespace NonogramSolver.Backend
 
             boardManager = new BoardManager(this);
 
-            dirtyConstraints = new Queue<ConstraintList>();
+            dirtyConstraints = new Queue<Constrainer>();
 
             CreateConstraints();
         }
@@ -87,8 +87,8 @@ namespace NonogramSolver.Backend
 
         private void CreateConstraints()
         {
-            rowConstraintList = Enumerable.Range(0, NumRows).Select(i => new ConstraintList(i, true, NumColumns, RowConstraints[i])).ToList();
-            colConstraintList = Enumerable.Range(0, NumColumns).Select(i => new ConstraintList(i, false, NumRows, ColumnConstraints[i])).ToList();
+            rowConstraintList = Enumerable.Range(0, NumRows).Select(i => new Constrainer(i, true, NumColumns, RowConstraints[i])).ToList();
+            colConstraintList = Enumerable.Range(0, NumColumns).Select(i => new Constrainer(i, false, NumRows, ColumnConstraints[i])).ToList();
 
             Debug.Assert(rowConstraintList.Count == NumRows);
             Debug.Assert(colConstraintList.Count == NumColumns);
@@ -96,6 +96,7 @@ namespace NonogramSolver.Backend
 
         private void SolverLoop()
         {
+            SetAllConstraintsDirty();
             while (true)
             {
                 //bool success = OuterConstraintLoop();
@@ -107,7 +108,7 @@ namespace NonogramSolver.Backend
                 // if we are violating a constraint
                 if (result == ConstrainResult.NoSolution)
                 {
-                    Debug.WriteLine("No Solution hit");
+                    //Debug.WriteLine("No Solution hit");
 
                     // We hit "no solution" for the current layer. Pop it, and push a new one with a different guess
                     DoPopLayer();
@@ -115,7 +116,7 @@ namespace NonogramSolver.Backend
                     continue;
                 }
 
-                Debug.WriteLine("Loop finished");
+                //Debug.WriteLine("Loop finished");
 
                 if (boardManager.CurrentLayer.CalculateIsSolved())
                     break;
@@ -126,24 +127,34 @@ namespace NonogramSolver.Backend
 
         private ConstrainResult ApplyConstraintsLoop()
         {
+            //uint tick = 0;
+            //uint tickReport = 1;
             while (dirtyConstraints.Count > 0)
             {
-                ConstraintList constraint = dirtyConstraints.Dequeue();
+                Constrainer constraint = dirtyConstraints.Dequeue();
                 Debug.Assert(constraint.IsDirty);
                 constraint.IsDirty = false;
                 var result = ApplyConstraint(constraint);
                 if (result == ConstrainResult.NoSolution)
                     return ConstrainResult.NoSolution;
+
+                //tick++;
+                //if (tick == tickReport)
+                //{
+                //    Debug.WriteLine("TICK " + tick.ToString());
+                //    tickReport = tickReport << 1;
+                //}
             }
 
             return ConstrainResult.Success;
         }
 
-        private ConstrainResult ApplyConstraint(ConstraintList constraint)
+        private ConstrainResult ApplyConstraint(Constrainer constraint)
         {
             BoardState state = boardManager.CurrentLayer;
+            var allConstraintStates = constraint.IsRow ? state.RowConstraintStates : state.ColConstraintStates;
             IBoardView boardView = constraint.IsRow ? state.CreateRowView(constraint.Index) : state.CreateColView(constraint.Index);
-            return constraint.ConstrainBoard(boardView);
+            return constraint.ConstrainBoard(boardView, allConstraintStates[constraint.Index]);
         }
 
         // Returns false if we have exhausted all options

@@ -128,7 +128,7 @@ namespace NonogramSolver.Tests
             Assert.True(solvedBoard[3, 3] == BlackColor);
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void Complex()
         {
             // 0 0 G G G G 0 0
@@ -282,7 +282,7 @@ namespace NonogramSolver.Tests
             TestImage(flagImage, G);
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void LadybugTest()
         {
             const uint W = 0;
@@ -317,7 +317,7 @@ namespace NonogramSolver.Tests
             TestImage(ladybugImage, G);
         }
 
-        [TestMethod]
+        //[TestMethod]
         public void SolvingTest()
         {
             ConstraintHelper Black = new ConstraintHelper(1);
@@ -400,7 +400,7 @@ namespace NonogramSolver.Tests
 
                 2*LightBlue + 12*Black + 9*Black + 2*Black + LightBlue + 3*LightBlue + 2*DarkBlue,
                 LightBlue + 13*Black + 12*Black + 2*Black + 3*LightBlue + 2*DarkBlue + DarkBlue,
-                22*Black + 6*Black + 3*LightBlue + 4*DarkBlue + 10*Black + 6*Black + 4*Black + 3*LightBlue + 5*DarkBlue,
+                22*Black + 6*Black + 3*LightBlue + 4*DarkBlue,
                 10*Black + 6*Black + 4*Black + 3*LightBlue + 5*DarkBlue,
                 Black + 6*Black + 3*Black + 4*Black + 2*LightBlue + 5*DarkBlue,
 
@@ -435,6 +435,9 @@ namespace NonogramSolver.Tests
             var colConstraints = colConstraintHelpers.Select(h => h.ToSet());
 
             IBoard board = BoardFactory.CreateBoard(rowConstraints, colConstraints, 4);
+            rowConstraints = null;
+            colConstraints = null;
+
             ISolvedBoard solved = board.Solve();
             Assert.True(solved != null);
         }

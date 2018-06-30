@@ -18,6 +18,8 @@ namespace NonogramSolver.Backend
     class BoardState
     {
         private ColorSet[,] colors;
+        private ConstraintState[] rowConstraints;
+        private ConstraintState[] colConstraints;
         private Board owningBoard;
         private readonly Guesser guesser;
 
@@ -33,19 +35,29 @@ namespace NonogramSolver.Backend
             owningBoard = board;
             guesser = new Guesser(board);
             CreateTiles();
+            CreateConstraintStates(board);
         }
 
         private BoardState(BoardState other)
         {
             // A copy constructor, essentially
+
             colors = (ColorSet[,])other.colors.Clone();
+            rowConstraints = other.rowConstraints.Select(c => c.Clone()).ToArray();
+            colConstraints = other.colConstraints.Select(c => c.Clone()).ToArray();
+
             owningBoard = other.owningBoard;
+
+            // Specifically don't clone the other board's guesser
             guesser = new Guesser(other.owningBoard);
         }
 
         public ColorSet this[int x, int y] => colors[x, y];
 
         public Guesser Guesser => guesser;
+
+        public IReadOnlyList<ConstraintState> RowConstraintStates => rowConstraints;
+        public IReadOnlyList<ConstraintState> ColConstraintStates => colConstraints;
 
         public ISolvedBoard ExtractSolvedBoard()
         {
@@ -122,6 +134,12 @@ namespace NonogramSolver.Backend
                     colors[i, j] = fullColor;
                 }
             }
+        }
+
+        private void CreateConstraintStates(Board board)
+        {
+            rowConstraints = board.RowConstraints.Select(c => new ConstraintState(board.NumColumns, c.Count)).ToArray();
+            colConstraints = board.ColumnConstraints.Select(c => new ConstraintState(board.NumRows, c.Count)).ToArray();
         }
 
         private class RowView : IBoardView
