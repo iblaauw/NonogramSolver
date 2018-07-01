@@ -67,18 +67,15 @@ namespace NonogramSolver.Backend
                 return ConstrainResult.NoSolution;
 
             AssignmentGenerator generator = new AssignmentGenerator(boardView, constraintSet);
-            if (!generator.Init())
-                return ConstrainResult.NoSolution;
 
             // Start it as completely empty
             ColorSet[] colorSets = new ColorSet[boardView.Count];
 
-            do
+            while (generator.MoveNext())
             {
-                var assignment = generator.Current;
-                var assignmentColors = assignment.ExtractColors();
-                Merge(assignmentColors, colorSets);
-            } while (generator.MoveNext());
+                var assignment = generator.GetAssignment();
+                Merge(assignment, colorSets);
+            }
 
             return boardView.IntersectAll(colorSets);
         }
