@@ -26,7 +26,7 @@ namespace NonogramSolver.Backend
 
         public readonly int[] minValues;
         public readonly int[] maxValues;
-        public int Cost;
+        public long Cost;
 
         public ConstraintState Clone()
         {
@@ -35,12 +35,13 @@ namespace NonogramSolver.Backend
 
         public void CalculateCost()
         {
-            int cost = 1;
+            long cost = 1;
             for (int i = 0; i < minValues.Length; i++)
             {
                 cost *= (maxValues[i] - minValues[i]) + 1;
             }
             Cost = cost;
+            Debug.Assert(Cost >= 0);
         }
     }
 

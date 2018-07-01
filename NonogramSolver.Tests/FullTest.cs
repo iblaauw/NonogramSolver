@@ -282,7 +282,7 @@ namespace NonogramSolver.Tests
             TestImage(flagImage, G);
         }
 
-        //[TestMethod]
+        [TestMethod]
         public void LadybugTest()
         {
             const uint W = 0;
@@ -317,7 +317,7 @@ namespace NonogramSolver.Tests
             TestImage(ladybugImage, G);
         }
 
-        //[TestMethod]
+        [TestMethod]
         public void SolvingTest()
         {
             ConstraintHelper Black = new ConstraintHelper(1);
@@ -345,7 +345,7 @@ namespace NonogramSolver.Tests
                 4*Black + Black + 4*Orange + 2*Black,
                 4*Black + Black + 3*Orange + 2*Black,
                 
-                3*Black + Black + Orange + 2*Orange,
+                3*Black + Black + Orange + 2*Black,
                 9*DarkBlue + 2*Black + 3*Black + 6*DarkBlue,
                 10*DarkBlue + 6*Black + 4*Black + 7*DarkBlue,
                 6*DarkBlue + 6*Black + 2*Black,
@@ -419,8 +419,8 @@ namespace NonogramSolver.Tests
                 LightBlue + 6*Black + 2*Black + 3*Black + Black + 3*Orange + Black + 4*LightBlue + 3*DarkBlue,
                 LightBlue + 9*Black + 3*Black + 4*Black + 2*Black + 3*Orange + Black + 4*LightBlue + 3*DarkBlue,
                 LightBlue + LightBlue + 11*Black + 8*Black + 4*Orange + Black + 5*LightBlue + 2*DarkBlue,
-                4*LightBlue + 4*Black + DarkBlue + 5*Black + Black + 2*Orange + Black + LightBlue + 4*Black + 3*DarkBlue,
-                5*LightBlue + 2*DarkBlue + 4*Black + LightBlue + 2*Black + 3*LightBlue + 4*LightBlue + 5*DarkBlue,
+                4*LightBlue + 4*Black + DarkBlue + 5*Black + Black + 2*Orange + Black + LightBlue + 4*LightBlue + 3*DarkBlue,
+                5*LightBlue + 2*DarkBlue + 4*Black + LightBlue + 2*Black + 3*LightBlue + 4*LightBlue + 4*DarkBlue,
 
                 3*LightBlue + 2*LightBlue + LightBlue + 2*DarkBlue + DarkBlue + 3*Black + 2*LightBlue + 6*LightBlue + 6*DarkBlue,
                 3*LightBlue + 2*LightBlue + LightBlue + 2*DarkBlue + DarkBlue + 2*Black + LightBlue + 4*LightBlue + 8*DarkBlue,

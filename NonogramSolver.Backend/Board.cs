@@ -28,7 +28,10 @@ namespace NonogramSolver.Backend
         private List<ConstraintListWrapper> rowConstraintList;
         private List<ConstraintListWrapper> colConstraintList;
 
-        private readonly PriorityQueue<int, ConstraintListWrapper> dirtyConstraints;
+        private volatile int debugConstraintIndex;
+        private volatile bool debugConstraintIsRow;
+
+        private readonly PriorityQueue<long, ConstraintListWrapper> dirtyConstraints;
 
         public Board(IEnumerable<IConstraintSet> rowConstraints, IEnumerable<IConstraintSet> colConstraints, ColorSpace colors)
         {
@@ -41,7 +44,7 @@ namespace NonogramSolver.Backend
 
             boardManager = new BoardManager(this);
 
-            dirtyConstraints = new PriorityQueue<int, ConstraintListWrapper>();
+            dirtyConstraints = new PriorityQueue<long, ConstraintListWrapper>();
 
             CreateConstraints();
         }
@@ -126,24 +129,27 @@ namespace NonogramSolver.Backend
 
         private ConstrainResult ApplyConstraintsLoop()
         {
-            //uint tick = 0;
-            //uint tickReport = 1;
+            uint tick = 0;
+            uint tickReport = 1;
             while (dirtyConstraints.Count > 0)
             {
                 ConstraintListWrapper constraint = dirtyConstraints.Dequeue();
                 Debug.Assert(constraint.IsDirty);
                 constraint.IsDirty = false;
 
+                debugConstraintIndex = constraint.Index;
+                debugConstraintIsRow = constraint.IsRow;
+
                 var result = ApplyConstraint(constraint);
                 if (result == ConstrainResult.NoSolution)
                     return ConstrainResult.NoSolution;
 
-                //tick++;
-                //if (tick == tickReport)
-                //{
-                //    Debug.WriteLine("TICK " + tick.ToString());
-                //    tickReport = tickReport << 1;
-                //}
+                tick++;
+                if (tick == tickReport)
+                {
+                    Debug.WriteLine("TICK " + tick.ToString());
+                    tickReport = tickReport << 1;
+                }
             }
 
             return ConstrainResult.Success;
@@ -154,11 +160,12 @@ namespace NonogramSolver.Backend
             BoardState state = boardManager.CurrentLayer;
             IBoardView boardView = constraint.CreateBoardView(state);
 
-            int oldCost = boardView.ConstraintState.Cost;
+            long oldCost = boardView.ConstraintState.Cost;
+            Debug.Assert(oldCost >= 0);
 
             constraint.Constraint.CalculateEstimatedCost(boardView);
 
-            int newCost = boardView.ConstraintState.Cost;
+            long newCost = boardView.ConstraintState.Cost;
 
             Debug.Assert(newCost <= oldCost);
 
@@ -234,7 +241,7 @@ namespace NonogramSolver.Backend
         {
             var state = boardManager.CurrentLayer;
             var constraintStates = constraint.IsRow ? state.RowConstraintStates : state.ColConstraintStates;
-            int cost = constraintStates[constraint.Index].Cost;
+            long cost = constraintStates[constraint.Index].Cost;
 
             constraint.IsDirty = true;
             dirtyConstraints.Enqueue(cost, constraint);
