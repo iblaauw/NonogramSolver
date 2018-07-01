@@ -12,6 +12,7 @@ namespace NonogramSolver.Backend
     {
         ColorSet this[int index] { get; }
         int Count { get; }
+        ConstraintState ConstraintState { get; }
         ConstrainResult IntersectAll(IReadOnlyList<ColorSet> colorSets);
     }
 
@@ -157,6 +158,8 @@ namespace NonogramSolver.Backend
 
             public int Count => owner.owningBoard.NumColumns;
 
+            public ConstraintState ConstraintState => owner.rowConstraints[rowIndex];
+
             public ConstrainResult IntersectAll(IReadOnlyList<ColorSet> colorSets)
             {
                 for (int i = 0; i < Count; i++)
@@ -192,6 +195,8 @@ namespace NonogramSolver.Backend
             public ColorSet this[int index] => owner.colors[index, colIndex];
 
             public int Count => owner.owningBoard.NumRows;
+
+            public ConstraintState ConstraintState => owner.colConstraints[colIndex];
 
             public ConstrainResult IntersectAll(IReadOnlyList<ColorSet> colorSets)
             {

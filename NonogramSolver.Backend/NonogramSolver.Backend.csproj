@@ -106,6 +106,7 @@
     <RestoreProjectStyle>PackageReference</RestoreProjectStyle>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="AssignmentGenerator.cs" />
     <Compile Include="Board.cs" />
     <Compile Include="BoardFactory.cs" />
     <Compile Include="BoardManager.cs" />
@@ -116,6 +117,7 @@
     <Compile Include="Constraint.cs" />
     <Compile Include="ConstraintExtractor.cs" />
     <Compile Include="ConstraintList.cs" />
+    <Compile Include="ConstraintListWrapper.cs" />
     <Compile Include="ConstraintSegment.cs" />
     <Compile Include="Guesser.cs" />
     <Compile Include="IBoard.cs" />

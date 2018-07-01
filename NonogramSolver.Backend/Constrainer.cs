@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace NonogramSolver.Backend
 {
+    // TODO: move this class to its own file
     class ConstraintState
     {
         public ConstraintState(int boardSize, int numConstraints)
@@ -30,28 +31,40 @@ namespace NonogramSolver.Backend
         }
     }
 
-    class Constrainer
+    internal class Constrainer : IConstraintList
     {
         private readonly IConstraintSet constraintSet;
-        private readonly int boardSize;
 
-        public Constrainer(int index, bool isRow, int size, IConstraintSet constraints)
+        public Constrainer(IConstraintSet constraints)
         {
             constraintSet = constraints;
-            boardSize = size;
-            Index = index;
-            IsRow = isRow;
         }
 
-        public int Index { get; private set; }
-        public bool IsRow { get; private set; }
-        public bool IsDirty { get; set; } = false;
+        public int EstimatedCost { get; private set; } = 0;
 
-        public ConstrainResult ConstrainBoard(IBoardView boardView, ConstraintState state)
+        public void CalculateEstimatedCost(IBoardView boardView)
+        {
+            CalculateMinMaxRanges(boardView);
+            EstimatedCost = DoCalculateCost(boardView.ConstraintState);
+        }
+
+        private static int DoCalculateCost(ConstraintState constraintState)
+        {
+            int cost = 1;
+            for (int i = 0; i < constraintState.minValues.Length; i++)
+            {
+                cost *= constraintState.maxValues[i] - constraintState.minValues[i];
+            }
+            return cost;
+        }
+
+        public ConstrainResult ConstrainBoard(IBoardView boardView)
         {
             var result = VerifyValid(boardView);
             if (result == ConstrainResult.NoSolution)
                 return ConstrainResult.NoSolution;
+
+            ConstraintState state = boardView.ConstraintState;
 
             AdjustInitialMins(state);
             AdjustInitialMaxs(state);
@@ -63,6 +76,21 @@ namespace NonogramSolver.Backend
             AdjustInitialMaxs(state);
             return Emit(boardView, state);
         }
+
+        private void CalculateMinMaxRanges(IBoardView boardView)
+        {
+            ConstraintState state = boardView.ConstraintState;
+
+            AdjustInitialMins(state);
+            AdjustInitialMaxs(state);
+            CalculateMin(boardView, state);
+            CalculateMax(boardView, state);
+
+            // TODO: roll these into CalculateMin/Max
+            AdjustInitialMins(state);
+            AdjustInitialMaxs(state);
+        }
+
 
         private void AdjustInitialMins(ConstraintState state)
         {

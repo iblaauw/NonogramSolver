@@ -4,7 +4,11 @@ using System.Text;
 
 namespace NonogramSolver.Backend
 {
-    public interface IConstraintList : IList<Constraint>
+    internal interface IConstraintList
     {
+        int EstimatedCost { get; }
+
+        void CalculateEstimatedCost(IBoardView boardView);
+        ConstrainResult ConstrainBoard(IBoardView boardView);
     }
 }
