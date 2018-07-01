@@ -128,7 +128,7 @@ namespace NonogramSolver.Tests
             Assert.True(solvedBoard[3, 3] == BlackColor);
         }
 
-        //[TestMethod]
+        [TestMethod]
         public void Complex()
         {
             // 0 0 G G G G 0 0

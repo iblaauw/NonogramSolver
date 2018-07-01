@@ -116,6 +116,18 @@ namespace NonogramSolver.Backend
             return true;
         }
 
+        private bool IsGapValidForBoard(int start, int end)
+        {
+            for (int i = start; i < end; i++)
+            {
+                bool valid = boardView[i].HasColor(ColorSpace.Empty);
+                if (!valid)
+                    return false;
+            }
+
+            return true;
+        }
+
         private void CalculateEndsAndGaps()
         {
             ends = new int[currentStarts.Length];
@@ -123,7 +135,7 @@ namespace NonogramSolver.Backend
 
             for (int i = 0; i < ends.Length; i++)
             {
-                ends[i] = boardView.ConstraintState.maxValues[i] - (int)constraints[i].number + 1;
+                ends[i] = boardView.ConstraintState.maxValues[i] - (int)constraints[i].number + 2; // This is +2 because maxValues is inclusive
             }
 
             for (int i = 0; i < requiresGapAfter.Length - 1; i++)

@@ -14,20 +14,33 @@ namespace NonogramSolver.Backend
         {
             minValues = Enumerable.Repeat(0, numConstraints).ToArray();
             maxValues = Enumerable.Repeat(boardSize-1, numConstraints).ToArray();
+            CalculateCost();
         }
 
         private ConstraintState(int[] mins, int[] maxs)
         {
             minValues = (int[])mins.Clone();
             maxValues = (int[])maxs.Clone();
+            CalculateCost();
         }
 
         public readonly int[] minValues;
         public readonly int[] maxValues;
+        public int Cost;
 
         public ConstraintState Clone()
         {
             return new ConstraintState(minValues, maxValues);
+        }
+
+        public void CalculateCost()
+        {
+            int cost = 1;
+            for (int i = 0; i < minValues.Length; i++)
+            {
+                cost *= (maxValues[i] - minValues[i]) + 1;
+            }
+            Cost = cost;
         }
     }
 
@@ -40,22 +53,10 @@ namespace NonogramSolver.Backend
             constraintSet = constraints;
         }
 
-        public int EstimatedCost { get; private set; } = 0;
-
         public void CalculateEstimatedCost(IBoardView boardView)
         {
             CalculateMinMaxRanges(boardView);
-            EstimatedCost = DoCalculateCost(boardView.ConstraintState);
-        }
-
-        private static int DoCalculateCost(ConstraintState constraintState)
-        {
-            int cost = 1;
-            for (int i = 0; i < constraintState.minValues.Length; i++)
-            {
-                cost *= constraintState.maxValues[i] - constraintState.minValues[i];
-            }
-            return cost;
+            boardView.ConstraintState.CalculateCost();
         }
 
         public ConstrainResult ConstrainBoard(IBoardView boardView)

@@ -75,15 +75,13 @@ namespace NonogramSolver.Backend
             var rowConstr = rowConstraintList[row];
             if (!rowConstr.IsDirty)
             {
-                dirtyConstraints.Enqueue(rowConstr.Constraint.EstimatedCost, rowConstr);
-                rowConstr.IsDirty = true;
+                Enqueue(rowConstr);
             }
 
             var colConstr = colConstraintList[col];
             if (!colConstr.IsDirty)
             {
-                dirtyConstraints.Enqueue(colConstr.Constraint.EstimatedCost, colConstr);
-                colConstr.IsDirty = true;
+                Enqueue(colConstr);
             }
         }
 
@@ -103,16 +101,13 @@ namespace NonogramSolver.Backend
             SetAllConstraintsDirty();
             while (true)
             {
-                //bool success = OuterConstraintLoop();
-
                 // Apply constraints as much as possible
                 var result = ApplyConstraintsLoop();
 
-                //if (!success)
                 // if we are violating a constraint
                 if (result == ConstrainResult.NoSolution)
                 {
-                    //Debug.WriteLine("No Solution hit");
+                    Debug.WriteLine("No Solution hit");
 
                     // We hit "no solution" for the current layer. Pop it, and push a new one with a different guess
                     DoPopLayer();
@@ -120,7 +115,7 @@ namespace NonogramSolver.Backend
                     continue;
                 }
 
-                //Debug.WriteLine("Loop finished");
+                Debug.WriteLine("Loop finished");
 
                 if (boardManager.CurrentLayer.CalculateIsSolved())
                     break;
@@ -159,11 +154,13 @@ namespace NonogramSolver.Backend
             BoardState state = boardManager.CurrentLayer;
             IBoardView boardView = constraint.CreateBoardView(state);
 
-            int oldCost = constraint.Constraint.EstimatedCost;
+            int oldCost = boardView.ConstraintState.Cost;
 
             constraint.Constraint.CalculateEstimatedCost(boardView);
 
-            int newCost = constraint.Constraint.EstimatedCost;
+            int newCost = boardView.ConstraintState.Cost;
+
+            Debug.Assert(newCost <= oldCost);
 
             if (newCost <= ENUMERATION_THRESHOLD || oldCost == newCost)
             {
@@ -172,6 +169,7 @@ namespace NonogramSolver.Backend
             }
             else
             {
+                constraint.IsDirty = true;
                 dirtyConstraints.Enqueue(newCost, constraint);
                 return ConstrainResult.Success;
             }
@@ -221,17 +219,25 @@ namespace NonogramSolver.Backend
             {
                 IBoardView boardView = constr.CreateBoardView(boardState);
                 constr.Constraint.CalculateEstimatedCost(boardView);
-                dirtyConstraints.Enqueue(constr.Constraint.EstimatedCost, constr);
-                constr.IsDirty = true;
+                Enqueue(constr);
             }
 
             foreach (var constr in colConstraintList)
             {
                 IBoardView boardView = constr.CreateBoardView(boardState);
                 constr.Constraint.CalculateEstimatedCost(boardView);
-                dirtyConstraints.Enqueue(constr.Constraint.EstimatedCost, constr);
-                constr.IsDirty = true;
+                Enqueue(constr);
             }
+        }
+
+        private void Enqueue(ConstraintListWrapper constraint)
+        {
+            var state = boardManager.CurrentLayer;
+            var constraintStates = constraint.IsRow ? state.RowConstraintStates : state.ColConstraintStates;
+            int cost = constraintStates[constraint.Index].Cost;
+
+            constraint.IsDirty = true;
+            dirtyConstraints.Enqueue(cost, constraint);
         }
     }
 }
