@@ -27,7 +27,7 @@ namespace NonogramSolver.Backend
         {
             get
             {
-                return new Assignment(currentStarts);
+                return new Assignment(currentStarts, constraints, boardView.Count);
             }
         }
 
@@ -137,12 +137,17 @@ namespace NonogramSolver.Backend
         public class Assignment
         {
             private readonly IReadOnlyList<int> startPoints;
-            public Assignment(IReadOnlyList<int> startPoints)
+            private readonly IConstraintSet constraints;
+            private readonly int boardSize;
+
+            public Assignment(IReadOnlyList<int> startPoints, IConstraintSet constraints, int boardSize)
             {
                 this.startPoints = startPoints;
+                this.constraints = constraints;
+                this.boardSize = boardSize;
             }
 
-            public IReadOnlyList<uint> ExtractColors(IConstraintSet constraints, int boardSize)
+            public IReadOnlyList<uint> ExtractColors()
             {
                 uint[] colors = new uint[boardSize];
 

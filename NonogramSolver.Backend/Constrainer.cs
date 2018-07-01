@@ -60,21 +60,26 @@ namespace NonogramSolver.Backend
 
         public ConstrainResult ConstrainBoard(IBoardView boardView)
         {
+            // Make sure what we have even makes sense
             var result = VerifyValid(boardView);
             if (result == ConstrainResult.NoSolution)
                 return ConstrainResult.NoSolution;
 
-            ConstraintState state = boardView.ConstraintState;
+            AssignmentGenerator generator = new AssignmentGenerator(boardView, constraintSet);
+            if (!generator.Init())
+                return ConstrainResult.NoSolution;
 
-            AdjustInitialMins(state);
-            AdjustInitialMaxs(state);
-            CalculateMin(boardView, state);
-            CalculateMax(boardView, state);
+            // Start it as completely empty
+            ColorSet[] colorSets = new ColorSet[boardView.Count];
 
-            // TODO: roll these into CalculateMin/Max
-            AdjustInitialMins(state);
-            AdjustInitialMaxs(state);
-            return Emit(boardView, state);
+            do
+            {
+                var assignment = generator.Current;
+                var assignmentColors = assignment.ExtractColors();
+                Merge(assignmentColors, colorSets);
+            } while (generator.MoveNext());
+
+            return boardView.IntersectAll(colorSets);
         }
 
         private void CalculateMinMaxRanges(IBoardView boardView)
@@ -243,6 +248,16 @@ namespace NonogramSolver.Backend
             }
 
             return ConstrainResult.Success;
+        }
+
+        private static void Merge(IReadOnlyList<uint> from, ColorSet[] into)
+        {
+            Debug.Assert(from.Count == into.Length);
+
+            for (int i = 0; i < from.Count; i++)
+            {
+                into[i] = into[i].AddColor(from[i]);
+            }
         }
 
     }

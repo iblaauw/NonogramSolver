@@ -22,11 +22,13 @@ namespace NonogramSolver.Backend
 
     internal class Board : IBoard
     {
-        private BoardManager boardManager;
-        private List<Constrainer> rowConstraintList;
-        private List<Constrainer> colConstraintList;
+        private const int ENUMERATION_THRESHOLD = 1000;
 
-        private readonly Queue<Constrainer> dirtyConstraints;
+        private BoardManager boardManager;
+        private List<ConstraintListWrapper> rowConstraintList;
+        private List<ConstraintListWrapper> colConstraintList;
+
+        private readonly PriorityQueue<int, ConstraintListWrapper> dirtyConstraints;
 
         public Board(IEnumerable<IConstraintSet> rowConstraints, IEnumerable<IConstraintSet> colConstraints, ColorSpace colors)
         {
@@ -39,7 +41,7 @@ namespace NonogramSolver.Backend
 
             boardManager = new BoardManager(this);
 
-            dirtyConstraints = new Queue<Constrainer>();
+            dirtyConstraints = new PriorityQueue<int, ConstraintListWrapper>();
 
             CreateConstraints();
         }
@@ -73,22 +75,24 @@ namespace NonogramSolver.Backend
             var rowConstr = rowConstraintList[row];
             if (!rowConstr.IsDirty)
             {
-                dirtyConstraints.Enqueue(rowConstr);
+                dirtyConstraints.Enqueue(rowConstr.Constraint.EstimatedCost, rowConstr);
                 rowConstr.IsDirty = true;
             }
 
             var colConstr = colConstraintList[col];
             if (!colConstr.IsDirty)
             {
-                dirtyConstraints.Enqueue(colConstr);
+                dirtyConstraints.Enqueue(colConstr.Constraint.EstimatedCost, colConstr);
                 colConstr.IsDirty = true;
             }
         }
 
         private void CreateConstraints()
         {
-            rowConstraintList = Enumerable.Range(0, NumRows).Select(i => new Constrainer(i, true, NumColumns, RowConstraints[i])).ToList();
-            colConstraintList = Enumerable.Range(0, NumColumns).Select(i => new Constrainer(i, false, NumRows, ColumnConstraints[i])).ToList();
+            var rowConstrainers = RowConstraints.Select(c => new Constrainer(c)).ToList();
+            var colConstrainers = ColumnConstraints.Select(c => new Constrainer(c)).ToList();
+            rowConstraintList = Enumerable.Range(0, NumRows).Select(i => new ConstraintListWrapper(i, true, rowConstrainers[i])).ToList();
+            colConstraintList = Enumerable.Range(0, NumColumns).Select(i => new ConstraintListWrapper(i, false, colConstrainers[i])).ToList();
 
             Debug.Assert(rowConstraintList.Count == NumRows);
             Debug.Assert(colConstraintList.Count == NumColumns);
@@ -131,9 +135,10 @@ namespace NonogramSolver.Backend
             //uint tickReport = 1;
             while (dirtyConstraints.Count > 0)
             {
-                Constrainer constraint = dirtyConstraints.Dequeue();
+                ConstraintListWrapper constraint = dirtyConstraints.Dequeue();
                 Debug.Assert(constraint.IsDirty);
                 constraint.IsDirty = false;
+
                 var result = ApplyConstraint(constraint);
                 if (result == ConstrainResult.NoSolution)
                     return ConstrainResult.NoSolution;
@@ -149,12 +154,27 @@ namespace NonogramSolver.Backend
             return ConstrainResult.Success;
         }
 
-        private ConstrainResult ApplyConstraint(Constrainer constraint)
+        private ConstrainResult ApplyConstraint(ConstraintListWrapper constraint)
         {
             BoardState state = boardManager.CurrentLayer;
-            var allConstraintStates = constraint.IsRow ? state.RowConstraintStates : state.ColConstraintStates;
-            IBoardView boardView = constraint.IsRow ? state.CreateRowView(constraint.Index) : state.CreateColView(constraint.Index);
-            return constraint.ConstrainBoard(boardView, allConstraintStates[constraint.Index]);
+            IBoardView boardView = constraint.CreateBoardView(state);
+
+            int oldCost = constraint.Constraint.EstimatedCost;
+
+            constraint.Constraint.CalculateEstimatedCost(boardView);
+
+            int newCost = constraint.Constraint.EstimatedCost;
+
+            if (newCost <= ENUMERATION_THRESHOLD || oldCost == newCost)
+            {
+                // We've judged that it is cheap enough to brute force hit this, or we don't have any other option
+                return constraint.Constraint.ConstrainBoard(boardView);
+            }
+            else
+            {
+                dirtyConstraints.Enqueue(newCost, constraint);
+                return ConstrainResult.Success;
+            }
         }
 
         // Returns false if we have exhausted all options
@@ -186,24 +206,30 @@ namespace NonogramSolver.Backend
             if (!boardManager.PopLayer())
                 throw new UnsolvableBoardException();
 
-            foreach (var constr in dirtyConstraints)
+            // TODO: this is pretty inefficient, it's O(n log n) when it could be O(n)
+            while (dirtyConstraints.Count > 0)
             {
+                var constr = dirtyConstraints.Dequeue();
                 constr.IsDirty = false;
             }
-            dirtyConstraints.Clear();
         }
 
         private void SetAllConstraintsDirty()
         {
+            BoardState boardState = boardManager.CurrentLayer;
             foreach (var constr in rowConstraintList)
             {
-                dirtyConstraints.Enqueue(constr);
+                IBoardView boardView = constr.CreateBoardView(boardState);
+                constr.Constraint.CalculateEstimatedCost(boardView);
+                dirtyConstraints.Enqueue(constr.Constraint.EstimatedCost, constr);
                 constr.IsDirty = true;
             }
 
             foreach (var constr in colConstraintList)
             {
-                dirtyConstraints.Enqueue(constr);
+                IBoardView boardView = constr.CreateBoardView(boardState);
+                constr.Constraint.CalculateEstimatedCost(boardView);
+                dirtyConstraints.Enqueue(constr.Constraint.EstimatedCost, constr);
                 constr.IsDirty = true;
             }
         }
